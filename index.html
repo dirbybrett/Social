@@ -17,11 +17,10 @@
     h1 {
       font-size: 6rem;
       font-weight: 700;
-      padding: 2rem 2rem 1rem;
       filter: blur(3px);
       transition: filter 0.3s;
       max-width: 1150px;
-      margin: 0 auto;
+      margin: 0;
     }
 
     h1:hover {
@@ -38,11 +37,11 @@
     }
 
     .column {
-      height: 800vh;
+      height: 450vh;
       overflow: hidden;
       position: relative;
-      mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
-      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+      mask-image: linear-gradient(to bottom, transparent 0%, black 3%, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 3%, black 90%, transparent 100%);
     }
 
     .scroller {
@@ -87,6 +86,29 @@
       z-index: 2;
     }
 
+    .header{
+      display: flex;
+      justify-content: space-between;
+      padding: 2rem;
+      gap: 2rem;
+    }
+
+    .header-text{
+      flex: 1;
+      text-align: right;
+      display: flex;
+      
+      justify-content: flex-end;
+    align-items: flex-end;
+    }
+
+.match-title-font {
+  font-weight: 700;
+  font-family: inherit;
+  font-size: 1.25rem; /* or whatever size fits your design */
+  filter: blur(1px);
+}
+
     @keyframes scroll {
       0% {
         transform: translateY(0%);
@@ -99,7 +121,14 @@
 </head>
 <body>
 
-<h1>SOCIAL</h1>
+<div class="header">
+  <h1 class="header-title">SOCIAL</h1>
+  <div class="header-text">
+    <p class="match-title-font">
+      hold down to watch ⬇️
+    </p>
+  </div>
+</div>
 <div class="grid" id="video-grid"></div>
 
 <script>
@@ -197,4 +226,3 @@ for (let i = 0; i < columns; i++) {
 
 </body>
 </html>
- 
