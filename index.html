@@ -58,7 +58,7 @@
     .tile {
       position: relative;
       padding-bottom: 177.77%;
-      border-radius: 12px;
+      border-radius: 10px;
       overflow: hidden;
       margin-bottom: 16px;
       cursor: pointer;
@@ -93,20 +93,28 @@
       gap: 2rem;
     }
 
-    .header-text{
-      flex: 1;
-      text-align: right;
-      display: flex;
-      
-      justify-content: flex-end;
-    align-items: flex-end;
-    }
+    .header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 2rem;
+  max-width: 1150px; /* same as .grid */
+  margin: 0 auto;     /* center it like .grid */
+  padding: 2rem 0;    /* remove horizontal padding */
+}
+
 
 .match-title-font {
-  font-weight: 700;
+  font-weight: 1000;
   font-family: inherit;
   font-size: 1.25rem; /* or whatever size fits your design */
   filter: blur(1px);
+   transition: filter 0.3s;
+}
+
+.match-title-font:hover {
+  filter: none;
+}
 }
 
     @keyframes scroll {
