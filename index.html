@@ -19,7 +19,6 @@
       font-weight: 700;
       filter: blur(3px);
       transition: filter 0.3s;
-      max-width: 1150px;
       margin: 0;
     }
 
@@ -27,13 +26,42 @@
       filter: none;
     }
 
+    .layout {
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 2rem;
+      padding: 2rem 0;
+    }
+
+    .header-text {
+      text-align: right;
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-end;
+    }
+
+    .match-title-font {
+      font-weight: 700;
+      font-family: inherit;
+      font-size: 1.25rem;
+      filter: blur(1px);
+      transition: filter 0.3s;
+    }
+
+    .match-title-font:hover {
+      filter: none;
+    }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
-      max-width: 1150px;
-      margin: 0 auto;
-      position: relative;
     }
 
     .column {
@@ -82,40 +110,8 @@
     }
 
     .tile.active iframe {
-      
       z-index: 2;
     }
-
-    .header{
-      display: flex;
-      justify-content: space-between;
-      padding: 2rem;
-      gap: 2rem;
-    }
-
-    .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: 2rem;
-  max-width: 1150px; /* same as .grid */
-  margin: 0 auto;     /* center it like .grid */
-  padding: 2rem 0;    /* remove horizontal padding */
-}
-
-
-.match-title-font {
-  font-weight: 1000;
-  font-family: inherit;
-  font-size: 1.25rem; /* or whatever size fits your design */
-  filter: blur(1px);
-   transition: filter 0.3s;
-}
-
-.match-title-font:hover {
-  filter: none;
-}
-}
 
     @keyframes scroll {
       0% {
@@ -129,15 +125,16 @@
 </head>
 <body>
 
-<div class="header">
-  <h1 class="header-title">SOCIAL</h1>
-  <div class="header-text">
-    <p class="match-title-font">
-      hold down to watch ⬇️
-    </p>
+<div class="layout">
+  <div class="header">
+    <h1 class="header-title">SOCIAL</h1>
+    <div class="header-text">
+      <p class="match-title-font">hold down to watch ⬇️</p>
+    </div>
   </div>
+
+  <div class="grid" id="video-grid"></div>
 </div>
-<div class="grid" id="video-grid"></div>
 
 <script>
 const videoIds = [
@@ -160,7 +157,7 @@ const perCol = Math.ceil(videoIds.length / columns);
 for (let i = 0; i < columns; i++) {
   const col = document.createElement('div');
   col.className = 'column' + (i % 2 ? ' reverse' : '');
-  
+
   const scroller = document.createElement('div');
   scroller.className = 'scroller';
 
@@ -180,15 +177,14 @@ for (let i = 0; i < columns; i++) {
     players[id] = player;
 
     const resumeScroll = () => {
-        tile.classList.remove('active');
-        player.setVolume(0);
-        player.setLoop(true);
-        player.play().catch(() => {});
-        activeTile = null;
-      };
+      tile.classList.remove('active');
+      player.setVolume(0);
+      player.setLoop(true);
+      player.play().catch(() => {});
+      activeTile = null;
+    };
 
     tile.addEventListener('mousedown', () => {
-      console.log('mousedown');
       const currentScroller = tile.closest('.column').querySelector('.scroller');
 
       if (activeTile) {
@@ -210,7 +206,6 @@ for (let i = 0; i < columns; i++) {
       player.setLoop(false);
       player.setCurrentTime(0).then(() => player.play());
 
-      // Pause scroll on click
       currentScroller.style.animationPlayState = 'paused';
 
       player.off('pause');
@@ -219,13 +214,13 @@ for (let i = 0; i < columns; i++) {
       player.on('ended', resumeScroll);
     });
 
-      tile.addEventListener('mouseup', () => {
-        const currentScroller = tile.closest('.column').querySelector('.scroller');
-        activeTile = null;
-        resumeScroll();
-        currentScroller.style.animationPlayState = 'running';
-      });
+    tile.addEventListener('mouseup', () => {
+      const currentScroller = tile.closest('.column').querySelector('.scroller');
+      activeTile = null;
+      resumeScroll();
+      currentScroller.style.animationPlayState = 'running';
     });
+  });
 
   col.appendChild(scroller);
   grid.appendChild(col);
