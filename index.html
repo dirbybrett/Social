@@ -2,59 +2,68 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Social Video Grid</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Social Grid</title>
   <script src="https://player.vimeo.com/api/player.js"></script>
   <style>
     body {
+      margin: 0;
       font-family: sans-serif;
       background: white;
       color: black;
-      margin: 0;
-      padding: 1rem;
+      overflow-x: hidden;
     }
 
     h1 {
-      font-size: 7rem;
+      font-size: 6rem;
       font-weight: 700;
-      margin: 1rem auto;
-      line-height: 1;
+      padding: 2rem 2rem 1rem;
       filter: blur(3px);
       transition: filter 0.3s;
       max-width: 1150px;
-      text-align: left;
+      margin: 0 auto;
     }
 
     h1:hover {
       filter: none;
     }
 
-    #video-grid {
+    .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 16px;
       max-width: 1150px;
-      margin: 1rem auto;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .column {
+      height: 300vh;
+      overflow: hidden;
+      position: relative;
+      mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 10%, black 90%, transparent 100%);
+    }
+
+    .scroller {
+      display: flex;
+      flex-direction: column;
+      animation: scroll 40s linear infinite;
+      animation-play-state: running;
+    }
+
+    .column.reverse .scroller {
+      animation-direction: reverse;
     }
 
     .tile {
       position: relative;
       padding-bottom: 177.77%;
+      border-radius: 12px;
       overflow: hidden;
-      border-radius: 15px;
+      margin-bottom: 16px;
       cursor: pointer;
-      opacity: 0;
-      transform: translateY(60px);
-      transition: transform 0.6s ease, opacity 0.6s ease;
-    }
-
-    .tile.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .tile:hover {
-      transform: scale(1.01);
+      flex-shrink: 0;
     }
 
     .tile iframe {
@@ -74,22 +83,33 @@
     }
 
     .tile.active iframe {
-      pointer-events: auto;
+      
       z-index: 2;
+    }
+
+    @keyframes scroll {
+      0% {
+        transform: translateY(0%);
+      }
+      100% {
+        transform: translateY(-50%);
+      }
     }
   </style>
 </head>
 <body>
 
 <h1>SOCIAL</h1>
-<div id="video-grid"></div>
+<div class="grid" id="video-grid"></div>
 
 <script>
 const videoIds = [
-  1101392507,1101392493,1101392480,1101392467,1101392450,1101392444,
-  1101392376,1101392429,1101392418,1101392403,1101392396,1101392387,
-  1101392368,1101392357,1101376171,1101376163,1101376152,1101376143,
-  1101392350,1101376127,1101376116,1101392340,1101392328,1101392322,
+  1101392507,1101392493,1101392480,1101392467,
+  1101392450,1101392444,1101392376,1101392429,
+  1101392418,1101392403,1101392396,1101392387,
+  1101392368,1101392357,1101376171,1101376163,
+  1101376152,1101376143,1101392350,1101376127,
+  1101376116,1101392340,1101392328,1101392322,
   1101392311,1101392301,1101392288,1101392282
 ];
 
@@ -97,69 +117,82 @@ const grid = document.getElementById('video-grid');
 const players = {};
 let activeTile = null;
 
-// Bounce on scroll
-const observer = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-      observer.unobserve(entry.target);
-    }else{
-          entry.target.classList.remove('visible');
-    }
-  });
-}, {
-  threshold: 0.2
-});
+const columns = 4;
+const perCol = Math.ceil(videoIds.length / columns);
 
-videoIds.forEach(id => {
-  const tile = document.createElement('div');
-  tile.className = 'tile';
-  tile.dataset.id = id;
+for (let i = 0; i < columns; i++) {
+  const col = document.createElement('div');
+  col.className = 'column' + (i % 2 ? ' reverse' : '');
+  
+  const scroller = document.createElement('div');
+  scroller.className = 'scroller';
 
-  const iframe = document.createElement('iframe');
-  iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
-  iframe.allow = 'autoplay; fullscreen';
-  tile.appendChild(iframe);
-  grid.appendChild(tile);
+  const colIds = videoIds.slice(i * perCol, (i + 1) * perCol);
+  colIds.forEach(id => {
+    const tile = document.createElement('div');
+    tile.className = 'tile';
+    tile.dataset.id = id;
 
-  observer.observe(tile); // ✅ Observe as soon as it’s added
+    const iframe = document.createElement('iframe');
+    iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
+    iframe.allow = 'autoplay; fullscreen';
+    tile.appendChild(iframe);
+    scroller.appendChild(tile);
 
-  const player = new Vimeo.Player(iframe);
-  players[id] = player;
+    const player = new Vimeo.Player(iframe);
+    players[id] = player;
 
-  tile.addEventListener('click', () => {
-    if (tile.classList.contains('active')) return;
+    const resumeScroll = () => {
+        tile.classList.remove('active');
+        player.setVolume(0);
+        player.setLoop(true);
+        player.play().catch(() => {});
+        activeTile = null;
+      };
 
-    if (activeTile) {
-      activeTile.classList.remove('active');
-      const prevId = activeTile.dataset.id;
-      const prevPlayer = players[prevId];
-      prevPlayer.setVolume(0);
-      prevPlayer.setLoop(true);
-      prevPlayer.play().catch(() => {});
-    }
+    tile.addEventListener('mousedown', () => {
+      console.log('mousedown');
+      const currentScroller = tile.closest('.column').querySelector('.scroller');
 
-    tile.classList.add('active');
-    activeTile = tile;
+      if (activeTile) {
+        const prevId = activeTile.dataset.id;
+        const prevPlayer = players[prevId];
+        prevPlayer.setVolume(0);
+        prevPlayer.setLoop(true);
+        prevPlayer.play().catch(() => {});
+        activeTile.classList.remove('active');
 
-    player.setVolume(1);
-    player.setLoop(false);
-    player.setCurrentTime(0).then(() => player.play());
+        const prevScroller = activeTile.closest('.column').querySelector('.scroller');
+        prevScroller.style.animationPlayState = 'running';
+      }
 
-    const restore = () => {
-      tile.classList.remove('active');
-      player.setVolume(0);
-      player.setLoop(true);
-      player.play().catch(() => {});
-      activeTile = null;
-    };
+      tile.classList.add('active');
+      activeTile = tile;
 
-    player.off('pause');
-    player.off('ended');
-    player.on('pause', restore);
-    player.on('ended', restore);
-  });
-});
+      player.setVolume(1);
+      player.setLoop(false);
+      player.setCurrentTime(0).then(() => player.play());
+
+      // Pause scroll on click
+      currentScroller.style.animationPlayState = 'paused';
+
+      player.off('pause');
+      player.off('ended');
+      player.on('pause', resumeScroll);
+      player.on('ended', resumeScroll);
+    });
+
+      tile.addEventListener('mouseup', () => {
+        const currentScroller = tile.closest('.column').querySelector('.scroller');
+        activeTile = null;
+        resumeScroll();
+        currentScroller.style.animationPlayState = 'running';
+      });
+    });
+
+  col.appendChild(scroller);
+  grid.appendChild(col);
+}
 </script>
 
 </body>
