@@ -181,6 +181,8 @@ const videoIds = [
   1101392387, 1101392368, 1101376152, 1102064026
 ];
 
+const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
 const grid = document.getElementById('video-grid');
 const players = {};
 let activeTile = null;
@@ -201,65 +203,94 @@ for (let i = 0; i < columns; i++) {
     tile.className = 'tile';
     tile.dataset.id = id;
 
-    const iframe = document.createElement('iframe');
-    iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
-    iframe.allow = 'autoplay; fullscreen';
-    tile.appendChild(iframe);
+    // If on desktop, embed iframe directly
+    if (!isMobile) {
+      const iframe = document.createElement('iframe');
+      iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
+      iframe.allow = 'autoplay; fullscreen';
+      tile.appendChild(iframe);
+
+      const player = new Vimeo.Player(iframe);
+      players[id] = player;
+
+      const resumeScroll = () => {
+        tile.classList.remove('active');
+        player.setVolume(0);
+        player.setLoop(true);
+        player.play().catch(() => {});
+        activeTile = null;
+      };
+
+      tile.addEventListener('mousedown', () => {
+        const currentScroller = tile.closest('.column').querySelector('.scroller');
+
+        if (activeTile) {
+          const prevId = activeTile.dataset.id;
+          const prevPlayer = players[prevId];
+          prevPlayer.setVolume(0);
+          prevPlayer.setLoop(true);
+          prevPlayer.play().catch(() => {});
+          activeTile.classList.remove('active');
+
+          const prevScroller = activeTile.closest('.column').querySelector('.scroller');
+          prevScroller.style.animationPlayState = 'running';
+        }
+
+        tile.classList.add('active');
+        activeTile = tile;
+
+        player.setVolume(1);
+        player.setLoop(false);
+        player.setCurrentTime(0).then(() => player.play());
+
+        currentScroller.style.animationPlayState = 'paused';
+
+        player.off('pause');
+        player.off('ended');
+        player.on('pause', resumeScroll);
+        player.on('ended', resumeScroll);
+      });
+
+      tile.addEventListener('mouseup', () => {
+        const currentScroller = tile.closest('.column').querySelector('.scroller');
+        activeTile = null;
+        resumeScroll();
+        currentScroller.style.animationPlayState = 'running';
+      });
+    } else {
+      // On mobile: placeholder only
+      const placeholder = document.createElement('div');
+      placeholder.style.background = '#ccc';
+      placeholder.style.width = '100%';
+      placeholder.style.height = '100%';
+      placeholder.style.position = 'absolute';
+      placeholder.style.inset = '0';
+      placeholder.style.display = 'flex';
+      placeholder.style.alignItems = 'center';
+      placeholder.style.justifyContent = 'center';
+      placeholder.style.fontSize = '1.5rem';
+      placeholder.style.color = '#555';
+      placeholder.innerText = 'Tap to Play';
+
+      tile.appendChild(placeholder);
+
+      tile.addEventListener('click', () => {
+        tile.innerHTML = ''; // remove placeholder
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1`;
+        iframe.allow = 'autoplay; fullscreen';
+        iframe.style.position = 'absolute';
+        iframe.style.inset = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        tile.appendChild(iframe);
+      });
+    }
+
     scroller.appendChild(tile);
-
-    const player = new Vimeo.Player(iframe);
-    players[id] = player;
-
-    const resumeScroll = () => {
-      tile.classList.remove('active');
-      player.setVolume(0);
-      player.setLoop(true);
-      player.play().catch(() => {});
-      activeTile = null;
-    };
-
-    tile.addEventListener('mousedown', () => {
-      const currentScroller = tile.closest('.column').querySelector('.scroller');
-
-      if (activeTile) {
-        const prevId = activeTile.dataset.id;
-        const prevPlayer = players[prevId];
-        prevPlayer.setVolume(0);
-        prevPlayer.setLoop(true);
-        prevPlayer.play().catch(() => {});
-        activeTile.classList.remove('active');
-
-        const prevScroller = activeTile.closest('.column').querySelector('.scroller');
-        prevScroller.style.animationPlayState = 'running';
-      }
-
-      tile.classList.add('active');
-      activeTile = tile;
-
-      player.setVolume(1);
-      player.setLoop(false);
-      player.setCurrentTime(0).then(() => player.play());
-
-      currentScroller.style.animationPlayState = 'paused';
-
-      player.off('pause');
-      player.off('ended');
-      player.on('pause', resumeScroll);
-      player.on('ended', resumeScroll);
-    });
-
-    tile.addEventListener('mouseup', () => {
-      const currentScroller = tile.closest('.column').querySelector('.scroller');
-      activeTile = null;
-      resumeScroll();
-      currentScroller.style.animationPlayState = 'running';
-    });
   });
 
   col.appendChild(scroller);
   grid.appendChild(col);
 }
 </script>
-
-</body>
-</html>
