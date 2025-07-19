@@ -118,7 +118,6 @@
       }
     }
 
-    /* Responsive Styles */
     @media (max-width: 768px) {
       h1.header-title {
         font-size: 4rem;
@@ -188,6 +187,34 @@ let activeTile = null;
 const columns = 4;
 const perCol = Math.ceil(videoIds.length / columns);
 
+// Lazy load using aggressive margin to support marquee effect
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const tile = entry.target;
+    const id = tile.dataset.id;
+
+    // Load even if it's not intersecting yet but close enough vertically
+    if (entry.isIntersecting || entry.boundingClientRect.top < window.innerHeight * 2) {
+      if (!tile.querySelector('iframe')) {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
+        iframe.allow = 'autoplay; fullscreen';
+        iframe.style.position = 'absolute';
+        iframe.style.inset = '0';
+        iframe.style.width = '100%';
+        iframe.style.height = '100%';
+        iframe.style.border = 'none';
+        tile.appendChild(iframe);
+        players[id] = new Vimeo.Player(iframe);
+        observer.unobserve(tile); // stop watching once loaded
+      }
+    }
+  });
+}, {
+  rootMargin: "2000px 0px", // preload well before viewport
+  threshold: 0
+});
+
 for (let i = 0; i < columns; i++) {
   const col = document.createElement('div');
   col.className = 'column' + (i % 2 ? ' reverse' : '');
@@ -201,34 +228,32 @@ for (let i = 0; i < columns; i++) {
     tile.className = 'tile';
     tile.dataset.id = id;
 
-    const iframe = document.createElement('iframe');
-    iframe.src = `https://player.vimeo.com/video/${id}?autoplay=1&muted=1&loop=1&background=1`;
-    iframe.allow = 'autoplay; fullscreen';
-    tile.appendChild(iframe);
+    observer.observe(tile);
     scroller.appendChild(tile);
-
-    const player = new Vimeo.Player(iframe);
-    players[id] = player;
 
     const resumeScroll = () => {
       tile.classList.remove('active');
-      player.setVolume(0);
-      player.setLoop(true);
-      player.play().catch(() => {});
+      const player = players[id];
+      if (player) {
+        player.setVolume(0);
+        player.setLoop(true);
+        player.play().catch(() => {});
+      }
       activeTile = null;
     };
 
     tile.addEventListener('mousedown', () => {
       const currentScroller = tile.closest('.column').querySelector('.scroller');
 
-      if (activeTile) {
+      if (activeTile && activeTile !== tile) {
         const prevId = activeTile.dataset.id;
         const prevPlayer = players[prevId];
-        prevPlayer.setVolume(0);
-        prevPlayer.setLoop(true);
-        prevPlayer.play().catch(() => {});
+        if (prevPlayer) {
+          prevPlayer.setVolume(0);
+          prevPlayer.setLoop(true);
+          prevPlayer.play().catch(() => {});
+        }
         activeTile.classList.remove('active');
-
         const prevScroller = activeTile.closest('.column').querySelector('.scroller');
         prevScroller.style.animationPlayState = 'running';
       }
@@ -236,21 +261,22 @@ for (let i = 0; i < columns; i++) {
       tile.classList.add('active');
       activeTile = tile;
 
-      player.setVolume(1);
-      player.setLoop(false);
-      player.setCurrentTime(0).then(() => player.play());
+      const player = players[id];
+      if (player) {
+        player.setVolume(1);
+        player.setLoop(false);
+        player.setCurrentTime(0).then(() => player.play());
 
-      currentScroller.style.animationPlayState = 'paused';
-
-      player.off('pause');
-      player.off('ended');
-      player.on('pause', resumeScroll);
-      player.on('ended', resumeScroll);
+        currentScroller.style.animationPlayState = 'paused';
+        player.off('pause');
+        player.off('ended');
+        player.on('pause', resumeScroll);
+        player.on('ended', resumeScroll);
+      }
     });
 
     tile.addEventListener('mouseup', () => {
       const currentScroller = tile.closest('.column').querySelector('.scroller');
-      activeTile = null;
       resumeScroll();
       currentScroller.style.animationPlayState = 'running';
     });
